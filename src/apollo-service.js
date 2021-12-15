@@ -37,7 +37,7 @@ export const getSplitLink = (token) => {
       );
     },
     wsLink,
-    httpLink
+    httpLink,
   );
 };
 

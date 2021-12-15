@@ -31,7 +31,6 @@
   });
 
   function login() {
-    console.log(auth);
     auth.loginWithPopup(auth0Client, client);
   }
 
@@ -44,7 +43,7 @@
     const price = prompt("price") || "";
     const count = prompt("count") || "";
     const { insert_laba3_sweets_one } = await http.startExecuteMyMutation(
-      OperationDocsStore.addOne(name, price, count)
+      OperationDocsStore.addOne(name, price, count),
     );
     sweets.update((n) => [...n, insert_laba3_sweets_one]);
   };
