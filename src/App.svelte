@@ -1,69 +1,75 @@
 <script>
+  import { onMount } from "svelte";
   import http from "./request-helper";
   import OperationDocsStore from "./operationDocsStore";
-  import { ApolloClient, InMemoryCache, HttpLink, split } from "@apollo/client";
-  import { setClient, subscribe } from "svelte-apollo";
-  import { WebSocketLink } from "@apollo/client/link/ws";
-  import { getMainDefinition } from "@apollo/client/utilities";
+  import { setClient } from "svelte-apollo";
+  import { token, isAuthenticated, user, sweets } from "./store";
+  import auth from "./auth-service";
+  import { getSplitLink, client } from "./apollo-service";
+  let auth0Client;
+  console.log(sweets);
+  onMount(async () => {
+    auth0Client = await auth.createClient();
+    isAuthenticated.set(await auth0Client.isAuthenticated());
+    const accessToken = await auth0Client.getIdTokenClaims();
+    if (accessToken) {
+      token.set(accessToken.__raw);
+      const splitLink = getSplitLink(accessToken.__raw);
+      client.setLink(splitLink);
+      client.resetStore();
+    }
+    user.set(await auth0Client.getUser());
+  });
+  setClient(client);
+  token.subscribe(async (value) => {
+    if (value) {
+      const { data } = await http.fetchMyQuery(OperationDocsStore.getAll());
+      console.log(data);
+      sweets.set(data.laba3_sweets);
+      console.log($sweets);
+    }
+  });
 
-  function createApolloClient() {
-    const httpLink = new HttpLink({
-      uri: "https://lab3web333.herokuapp.com/v1/graphql",
-    });
-    const cache = new InMemoryCache();
-    const wsLink = new WebSocketLink({
-      uri: "wss://lab3web333.herokuapp.com/v1/graphql",
-      options: {
-        reconnect: true,
-      },
-    });
-    const link = split(
-      ({ query }) => {
-        const definition = getMainDefinition(query);
-        return (
-          definition.kind === "OperationDefinition" &&
-          definition.operation === "subscription"
-        );
-      },
-      wsLink,
-      httpLink,
-    );
-    return new ApolloClient({
-      link,
-      cache,
-    });
+  function login() {
+    console.log(auth);
+    auth.loginWithPopup(auth0Client, client);
   }
 
-  const client = createApolloClient();
-  setClient(client);
-  const sweets = subscribe(OperationDocsStore.subscribeToAll());
+  function logout() {
+    auth.logout(auth0Client);
+  }
 
   const addSweet = async () => {
     const name = prompt("name") || "";
     const price = prompt("price") || "";
     const count = prompt("count") || "";
-    await http.startExecuteMyMutation(
-      OperationDocsStore.addOne(name, price, count),
+    const { insert_laba3_sweets_one } = await http.startExecuteMyMutation(
+      OperationDocsStore.addOne(name, price, count)
     );
+    sweets.update((n) => [...n, insert_laba3_sweets_one]);
   };
 
   const deleteSweet = async () => {
     const name = prompt("which sweet to delete?") || "";
     if (name) {
       await http.startExecuteMyMutation(OperationDocsStore.deleteByName(name));
+      sweets.update((n) => n.filter((sweet) => sweet.name !== name));
     }
   };
 </script>
 
 <main>
-  {#if $sweets.loading}
+  {#if !$isAuthenticated}
+    <button on:click={login}>Log in</button>
+  {:else if $sweets.loading}
     <h1>Loading...</h1>
   {:else if $sweets.error}
-    <h1>{$sweets.error}</h1>
+    <h1>{JSON.stringify($sweets.error)}</h1>
   {:else}
+    <button on:click={logout}>Log out</button>
     <button on:click={addSweet}>Add new sweet</button>
     <button on:click={deleteSweet}>Delete sweet</button>
-    {#each $sweets.data.laba3_sweets as sweet}
+    {#each $sweets as sweet}
       <div class="sweetItem">
         <p>Name: {sweet.name}</p>
         <p>Price: {sweet.price}</p>
