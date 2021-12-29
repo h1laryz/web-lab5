@@ -3,11 +3,11 @@ import { token } from "./store";
 
 class RequestHelper {
   constructor() {
-    this.API_URL = "https://laba5-web.herokuapp.com/v1/graphql";
+    this.HASURA_URL = API_URL;
   }
 
   async fetchGraphQL(operationsDoc, operationName, variables) {
-    const result = await fetch(this.API_URL, {
+    const result = await fetch(this.HASURA_URL, {
       method: "POST",
       body: JSON.stringify({
         query: operationsDoc,

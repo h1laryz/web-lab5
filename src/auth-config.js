@@ -1,6 +1,6 @@
 const config = {
-  domain: "dev-99h2vqmk.us.auth0.com",
-  clientId: "r4yCLriAEZGpYmQQHH3TrUE5jzsIpIHm",
+  domain: AUTH_DOMAIN,
+  clientId: AUTH_CLIENTID,
 };
 
 export default config;
