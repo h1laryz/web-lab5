@@ -1,5 +1,5 @@
 import { get } from "svelte/store";
-import { token } from "./store";
+import { token, requestCounter, error } from "./store";
 
 class RequestHelper {
   constructor() {
@@ -26,12 +26,17 @@ class RequestHelper {
   }
 
   async startFetchMyQuery(operationsDoc) {
+    requestCounter.update((n) => n + 1);
     const { errors, data } = await this.fetchMyQuery(operationsDoc);
 
     if (errors) {
       // handle those errors like a pro
       console.error(errors);
+      error.set(errors[0].message);
+    } else {
+      error.set("");
     }
+    requestCounter.update((n) => n - 1);
 
     // do something great with this precious data
     console.log(data);
@@ -43,12 +48,18 @@ class RequestHelper {
   }
 
   async startExecuteMyMutation(operationsDoc) {
+    requestCounter.update((n) => n + 1);
+
     const { errors, data } = await this.executeMyMutation(operationsDoc);
 
     if (errors) {
       // handle those errors like a pro
       console.error(errors);
+      error.set(errors[0].message);
+    } else {
+      error.set("");
     }
+    requestCounter.update((n) => n - 1);
 
     // do something great with this precious data
     console.log(data);

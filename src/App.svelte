@@ -2,36 +2,37 @@
   import { onMount } from "svelte";
   import http from "./request-helper";
   import OperationDocsStore from "./operationDocsStore";
-  import { setClient } from "svelte-apollo";
-  import { token, isAuthenticated, user, sweets } from "./store";
+  import {
+    token,
+    isAuthenticated,
+    user,
+    sweets,
+    requestCounter,
+    error,
+  } from "./store";
   import auth from "./auth-service";
-  import { getSplitLink, client } from "./apollo-service";
   let auth0Client;
-  console.log(sweets);
+  let online;
+  const toAdd = {};
+  const toDelete = {};
   onMount(async () => {
     auth0Client = await auth.createClient();
     isAuthenticated.set(await auth0Client.isAuthenticated());
     const accessToken = await auth0Client.getIdTokenClaims();
     if (accessToken) {
       token.set(accessToken.__raw);
-      const splitLink = getSplitLink(accessToken.__raw);
-      client.setLink(splitLink);
-      client.resetStore();
     }
     user.set(await auth0Client.getUser());
   });
-  setClient(client);
   token.subscribe(async (value) => {
     if (value) {
       const { data } = await http.fetchMyQuery(OperationDocsStore.getAll());
-      console.log(data);
       sweets.set(data.laba3_sweets);
-      console.log($sweets);
     }
   });
 
   function login() {
-    auth.loginWithPopup(auth0Client, client);
+    auth.loginWithPopup(auth0Client);
   }
 
   function logout() {
@@ -39,17 +40,17 @@
   }
 
   const addSweet = async () => {
-    const name = prompt("name") || "";
-    const price = prompt("price") || "";
-    const count = prompt("count") || "";
+    const { name, price, count } = toAdd;
     const { insert_laba3_sweets_one } = await http.startExecuteMyMutation(
       OperationDocsStore.addOne(name, price, count),
     );
-    sweets.update((n) => [...n, insert_laba3_sweets_one]);
+    if (insert_laba3_sweets_one) {
+      sweets.update((n) => [...n, insert_laba3_sweets_one]);
+    }
   };
 
   const deleteSweet = async () => {
-    const name = prompt("which sweet to delete?") || "";
+    const { name } = toDelete;
     if (name) {
       await http.startExecuteMyMutation(OperationDocsStore.deleteByName(name));
       sweets.update((n) => n.filter((sweet) => sweet.name !== name));
@@ -57,17 +58,31 @@
   };
 </script>
 
+<svelte:window bind:online />
+
 <main>
-  {#if !$isAuthenticated}
+  {#if !online}
+    <h1>You are offline</h1>
+  {:else if !$isAuthenticated}
     <button on:click={login}>Log in</button>
-  {:else if $sweets.loading}
+  {:else if $sweets.loading || $requestCounter}
     <h1>Loading...</h1>
   {:else if $sweets.error}
     <h1>{JSON.stringify($sweets.error)}</h1>
+  {:else if $error}
+    <h1>{$error}</h1>
   {:else}
     <button on:click={logout}>Log out</button>
-    <button on:click={addSweet}>Add new sweet</button>
-    <button on:click={deleteSweet}>Delete sweet</button>
+    <div>
+      <input placeholder="Name" bind:value={toAdd.name} />
+      <input placeholder="Price" bind:value={toAdd.price} />
+      <input placeholder="Count" bind:value={toAdd.count} />
+      <button on:click={addSweet}>Add new sweet</button>
+    </div>
+    <div>
+      <input placeholder="Name" bind:value={toDelete.name} />
+      <button on:click={deleteSweet}>Delete sweet</button>
+    </div>
     {#each $sweets as sweet}
       <div class="sweetItem">
         <p>Name: {sweet.name}</p>

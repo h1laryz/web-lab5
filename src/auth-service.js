@@ -1,7 +1,6 @@
 import createAuth0Client from "@auth0/auth0-spa-js";
 import { user, isAuthenticated, popupOpen, token } from "./store";
 import config from "./auth-config";
-import { getSplitLink } from "./apollo-service";
 
 async function createClient() {
   return await createAuth0Client({
@@ -10,7 +9,7 @@ async function createClient() {
   });
 }
 
-async function loginWithPopup(client, apollo, options) {
+async function loginWithPopup(client, options) {
   popupOpen.set(true);
   try {
     await client.loginWithPopup(options);
@@ -19,8 +18,6 @@ async function loginWithPopup(client, apollo, options) {
     const accessToken = await client.getIdTokenClaims();
     if (accessToken) {
       token.set(accessToken.__raw);
-      const splitLink = getSplitLink(accessToken.__raw);
-      apollo.setLink(splitLink);
     }
     isAuthenticated.set(true);
   } catch (e) {
