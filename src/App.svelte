@@ -14,7 +14,6 @@
   let auth0Client;
   let online;
   const toAdd = {};
-  const toDelete = {};
   onMount(async () => {
     auth0Client = await auth.createClient();
     isAuthenticated.set(await auth0Client.isAuthenticated());
@@ -26,8 +25,12 @@
   });
   token.subscribe(async (value) => {
     if (value) {
-      const { data } = await http.fetchMyQuery(OperationDocsStore.getAll());
-      sweets.set(data.laba3_sweets);
+      try {
+        const { data } = await http.fetchMyQuery(OperationDocsStore.getAll());
+        sweets.set(data.laba3_sweets);
+      } catch (e) {
+        error.set("Cannot fetch data");
+      }
     }
   });
 
@@ -41,19 +44,24 @@
 
   const addSweet = async () => {
     const { name, price, count } = toAdd;
-    const { insert_laba3_sweets_one } = await http.startExecuteMyMutation(
-      OperationDocsStore.addOne(name, price, count),
-    );
-    if (insert_laba3_sweets_one) {
-      sweets.update((n) => [...n, insert_laba3_sweets_one]);
+    try {
+      const { insert_laba3_sweets_one } = await http.startExecuteMyMutation(
+        OperationDocsStore.addOne(name, price, count),
+      );
+      if (insert_laba3_sweets_one) {
+        sweets.update((n) => [...n, insert_laba3_sweets_one]);
+      }
+    } catch (e) {
+      error.set("Error while adding");
     }
   };
 
-  const deleteSweet = async () => {
-    const { name } = toDelete;
-    if (name) {
-      await http.startExecuteMyMutation(OperationDocsStore.deleteByName(name));
-      sweets.update((n) => n.filter((sweet) => sweet.name !== name));
+  const deleteSweet = async (id) => {
+    try {
+      await http.startExecuteMyMutation(OperationDocsStore.deleteById(id));
+      sweets.update((n) => n.filter((sweet) => sweet.id !== id));
+    } catch (e) {
+      error.set("Error while deleting");
     }
   };
 </script>
@@ -67,10 +75,8 @@
     <button on:click={login}>Log in</button>
   {:else if $sweets.loading || $requestCounter}
     <h1>Loading...</h1>
-  {:else if $sweets.error}
-    <h1>{JSON.stringify($sweets.error)}</h1>
-  {:else if $error}
-    <h1>{$error}</h1>
+  {:else if $sweets.error || $error}
+    <h1>{JSON.stringify($sweets.error) || $error}</h1>
   {:else}
     <button on:click={logout}>Log out</button>
     <div>
@@ -79,27 +85,31 @@
       <input placeholder="Count" bind:value={toAdd.count} />
       <button on:click={addSweet}>Add new sweet</button>
     </div>
-    <div>
-      <input placeholder="Name" bind:value={toDelete.name} />
-      <button on:click={deleteSweet}>Delete sweet</button>
-    </div>
-    {#each $sweets as sweet}
-      <div class="sweetItem">
-        <p>Name: {sweet.name}</p>
-        <p>Price: {sweet.price}</p>
-        <p>Count: {sweet.count}</p>
-      </div>
-    {/each}
+    {#if $sweets.length}
+      {#each $sweets as sweet (sweet.id)}
+        <div class="sweetItem">
+          <p>Name: {sweet.name}</p>
+          <p>Price: {sweet.price}</p>
+          <p>Count: {sweet.count}</p>
+          <button on:click={() => deleteSweet(sweet.id)}>Delete sweet</button>
+        </div>
+      {/each}
+    {:else}
+      <h1>Nothing to show</h1>
+    {/if}
   {/if}
 </main>
 
 <style>
+  :root {
+    --black: #000;
+  }
   main {
     margin: 0;
     padding: 0;
   }
   .sweetItem {
-    border: 1px solid #000;
+    border: 1px solid var(--black);
     margin: 10px;
     padding: 10px;
   }

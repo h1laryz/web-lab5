@@ -3,7 +3,7 @@ import { user, isAuthenticated, popupOpen, token } from "./store";
 import config from "./auth-config";
 
 async function createClient() {
-  return await createAuth0Client({
+  return createAuth0Client({
     domain: config.domain,
     client_id: config.clientId,
   });

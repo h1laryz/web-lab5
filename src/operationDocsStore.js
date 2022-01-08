@@ -18,14 +18,15 @@ export default class OperationDocsStore {
         count
         name
         price
+        id
       }
     }    
       `;
   }
 
-  static deleteByName(name) {
+  static deleteById(id) {
     return `mutation MyMutation {
-      delete_laba3_sweets(where: {name: {_eq: "${name}"}}) {
+      delete_laba3_sweets(whre: {id: {_eq: "${id}"}}) {
         affected_rows
       }
     }
