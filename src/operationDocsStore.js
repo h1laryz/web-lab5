@@ -26,7 +26,7 @@ export default class OperationDocsStore {
 
   static deleteById(id) {
     return `mutation MyMutation {
-      delete_laba3_sweets(whre: {id: {_eq: "${id}"}}) {
+      delete_laba3_sweets(where: {id: {_eq: "${id}"}}) {
         affected_rows
       }
     }
