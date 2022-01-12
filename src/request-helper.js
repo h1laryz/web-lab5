@@ -38,6 +38,9 @@ class RequestHelper {
       // handle those errors like a pro
       console.error(errors);
       throw new Error(errors[0].message);
+    } else if (!errors && !data) {
+      requestCounter.update((n) => n - 1);
+      throw new Error("Error");
     } else {
       error.set("");
     }
