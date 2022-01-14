@@ -26,7 +26,9 @@
   token.subscribe(async (value) => {
     if (value) {
       try {
+        requestCounter.update((n) => n + 1);
         const { data } = await http.fetchMyQuery(OperationDocsStore.getAll());
+        requestCounter.update((n) => n - 1);
         sweets.set(data.laba3_sweets);
       } catch (e) {
         error.set("Cannot fetch data");
@@ -75,6 +77,7 @@
     <button on:click={login}>Log in</button>
   {:else if $sweets.loading || $requestCounter}
     <h1>Loading...</h1>
+    <p>{$requestCounter}</p>
   {:else if $sweets.error || $error}
     <h1>{JSON.stringify($sweets.error) || $error}</h1>
   {:else}
