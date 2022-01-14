@@ -77,7 +77,6 @@
     <button on:click={login}>Log in</button>
   {:else if $sweets.loading || $requestCounter}
     <h1>Loading...</h1>
-    <p>{$requestCounter}</p>
   {:else if $sweets.error || $error}
     <h1>{JSON.stringify($sweets.error) || $error}</h1>
   {:else}
